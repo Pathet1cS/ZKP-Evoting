@@ -1,6 +1,6 @@
 // App.js - Main component
 import React, { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
+import { ethers, BrowserProvider, Contract } from 'ethers';
 import './App.css';
 import contractABI from './contractABI.json';
 import AdminPanel from './components/AdminPanel';
@@ -9,7 +9,7 @@ import VotingResults from './components/VotingResults';
 import ConnectWallet from './components/ConnectWallet';
 
 // The contract address will need to be updated after deployment
-const CONTRACT_ADDRESS = "0xfaE8cC4E7B24E8f519EAA0a1dc2c093B9778a08F"; 
+const CONTRACT_ADDRESS = "0x09fC3d6BeC34b2c7107019B837Ae7f849598F55A"; 
 
 function App() {
   const [provider, setProvider] = useState(null);
@@ -22,15 +22,29 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Function to check voter status
+  const checkVoterStatus = async (accountAddress, contractWithSigner) => {
+    try {
+      const [registered, voted] = await contractWithSigner.checkVoterStatus(accountAddress);
+      console.log("Voter status check:", { registered, voted, address: accountAddress });
+      setIsRegistered(registered);
+      setHasVoted(voted);
+    } catch (err) {
+      console.error("Error checking voter status:", err);
+      setIsRegistered(false);
+      setHasVoted(false);
+    }
+  };
+
   // Connect to the blockchain and load contract
   useEffect(() => {
     const init = async () => {
       try {
         if (window.ethereum) {
-          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          const provider = new BrowserProvider(window.ethereum);
           setProvider(provider);
           
-          const contract = new ethers.Contract(
+          const contract = new Contract(
             CONTRACT_ADDRESS,
             contractABI,
             provider
@@ -60,6 +74,7 @@ function App() {
   const connectWallet = async () => {
     try {
       setLoading(true);
+      setError('');
       
       // Request account access
       const accounts = await window.ethereum.request({ 
@@ -69,25 +84,18 @@ function App() {
       const connectedAccount = accounts[0];
       setAccount(connectedAccount);
       
-      // Check if connected account is admin
-      const adminAddress = await contract.admin();
-      setIsAdmin(connectedAccount.toLowerCase() === adminAddress.toLowerCase());
-      
       // Get signer for transactions
-      const signer = provider.getSigner();
+      const signer = await provider.getSigner();
       const contractWithSigner = contract.connect(signer);
       setContract(contractWithSigner);
       
-      // Check if voter is registered
-      try {
-        const [registered, voted] = await contractWithSigner.checkVoterStatus(connectedAccount);
-        setIsRegistered(registered);
-        setHasVoted(voted);
-      } catch (voterErr) {
-        // If error occurs, voter is not registered
-        setIsRegistered(false);
-        setHasVoted(false);
-      }
+      // Check if connected account is admin
+      const adminAddress = await contractWithSigner.admin();
+      const isAdminAccount = connectedAccount.toLowerCase() === adminAddress.toLowerCase();
+      setIsAdmin(isAdminAccount);
+      
+      // Check voter status
+      await checkVoterStatus(connectedAccount, contractWithSigner);
       
       setLoading(false);
     } catch (err) {
@@ -100,11 +108,33 @@ function App() {
   // Update status on account change
   useEffect(() => {
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts) => {
-        window.location.reload();
+      window.ethereum.on('accountsChanged', async (accounts) => {
+        if (accounts.length > 0) {
+          const newAccount = accounts[0];
+          setAccount(newAccount);
+          
+          if (contract && provider) {
+            const signer = await provider.getSigner();
+            const contractWithSigner = contract.connect(signer);
+            setContract(contractWithSigner);
+            
+            // Check if new account is admin
+            const adminAddress = await contractWithSigner.admin();
+            setIsAdmin(newAccount.toLowerCase() === adminAddress.toLowerCase());
+            
+            // Check voter status for new account
+            await checkVoterStatus(newAccount, contractWithSigner);
+          }
+        } else {
+          // No accounts found - user disconnected
+          setAccount('');
+          setIsAdmin(false);
+          setIsRegistered(false);
+          setHasVoted(false);
+        }
       });
     }
-  }, []);
+  }, [contract, provider]);
 
   // Render loading state
   if (loading) {

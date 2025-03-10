@@ -36,9 +36,9 @@ function VotingResults({ contract, votingActive }) {
       const [ids, names, voteCounts] = await contract.getAllCandidatesWithVotes();
       
       const formattedResults = ids.map((id, index) => ({
-        id: id.toNumber(),
+        id: Number(id),
         name: names[index],
-        voteCount: voteCounts[index].toNumber()
+        voteCount: Number(voteCounts[index])
       }));
       
       // Sort by vote count descending

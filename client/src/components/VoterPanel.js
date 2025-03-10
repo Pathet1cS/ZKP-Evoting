@@ -35,7 +35,7 @@ function VoterPanel({ contract, account, isRegistered, hasVoted, votingActive, s
   const updateRemainingTime = async () => {
     try {
       const [isActive, remaining] = await contract.getVotingStatus();
-      setRemainingTime(remaining.toNumber());
+      setRemainingTime(Number(remaining));
       
       if (!isActive && votingActive) {
         window.location.reload(); // Refresh to update UI
@@ -54,10 +54,12 @@ function VoterPanel({ contract, account, isRegistered, hasVoted, votingActive, s
 
   const checkVotedCandidate = async () => {
     try {
-      const [hasVotedCheck, candidateId] = await contract.checkVoterStatus(account);
-      if (hasVotedCheck) {
-        setVotedFor(candidateId.toNumber());
-        setHasVoted(true);
+      if (hasVoted) {
+        // Get the voter info directly from the voters mapping
+        const voterInfo = await contract.voters(account);
+        if (voterInfo && voterInfo.hasVoted) {
+          setVotedFor(Number(voterInfo.votedCandidateId));
+        }
       }
     } catch (err) {
       console.error("Error checking voted candidate:", err);
@@ -69,9 +71,9 @@ function VoterPanel({ contract, account, isRegistered, hasVoted, votingActive, s
       const [ids, names, voteCounts] = await contract.getAllCandidatesWithVotes();
       
       const formattedCandidates = ids.map((id, index) => ({
-        id: id.toNumber(),
+        id: Number(id),
         name: names[index],
-        voteCount: voteCounts[index].toNumber()
+        voteCount: Number(voteCounts[index])
       }));
       
       setCandidates(formattedCandidates);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
+import { ethers, isAddress } from 'ethers';
 
 function AdminPanel({ contract, votingActive, setVotingActive }) {
   const [candidates, setCandidates] = useState([]);
@@ -38,9 +38,9 @@ function AdminPanel({ contract, votingActive, setVotingActive }) {
       const [ids, names, voteCounts] = await contract.getAllCandidatesWithVotes();
       
       const formattedCandidates = ids.map((id, index) => ({
-        id: id.toNumber(),
+        id: Number(id),
         name: names[index],
-        voteCount: voteCounts[index].toNumber()
+        voteCount: Number(voteCounts[index])
       }));
       
       setCandidates(formattedCandidates);
@@ -61,18 +61,29 @@ function AdminPanel({ contract, votingActive, setVotingActive }) {
     setMessage({ text: '', type: '' });
 
     try {
+      console.log("Adding candidate:", newCandidate);
+      // Send the transaction
       const tx = await contract.addCandidate(newCandidate.name, newCandidate.details);
-      await tx.wait();
+      console.log("Transaction sent:", tx);
+      // Wait for the transaction to be mined
+      const receipt = await tx.wait();
+      console.log("Transaction receipt:", receipt);
       
-      setNewCandidate({ name: '', details: '' });
-      loadCandidates();
-      setMessage({ text: "Candidate added successfully", type: 'success' });
+      if (receipt.status === 1) {
+        setNewCandidate({ name: '', details: '' });
+        console.log("Loading candidates after add...");
+        await loadCandidates();
+        console.log("Current candidates:", candidates);
+        setMessage({ text: "Candidate added successfully", type: 'success' });
+      } else {
+        throw new Error("Transaction failed");
+      }
     } catch (err) {
       console.error("Error adding candidate:", err);
       setMessage({ 
         text: err.message.includes("Voting has already started") 
           ? "Cannot add candidates after voting has started" 
-          : "Failed to add candidate", 
+          : "Failed to add candidate. Make sure you are connected with the admin account.", 
         type: 'error' 
       });
     } finally {
@@ -82,7 +93,7 @@ function AdminPanel({ contract, votingActive, setVotingActive }) {
 
   const registerVoter = async (e) => {
     e.preventDefault();
-    if (!ethers.utils.isAddress(voterAddress)) {
+    if (!isAddress(voterAddress)) {
       setMessage({ text: "Please enter a valid Ethereum address", type: 'error' });
       return;
     }
@@ -96,6 +107,14 @@ function AdminPanel({ contract, votingActive, setVotingActive }) {
       
       setVoterAddress('');
       setMessage({ text: "Voter registered successfully", type: 'success' });
+
+      // Check voter status again after registration
+      try {
+        const [registered, voted] = await contract.checkVoterStatus(voterAddress);
+        console.log("Voter status after registration:", { registered, voted, address: voterAddress });
+      } catch (checkErr) {
+        console.error("Error checking voter status:", checkErr);
+      }
     } catch (err) {
       console.error("Error registering voter:", err);
       setMessage({ 

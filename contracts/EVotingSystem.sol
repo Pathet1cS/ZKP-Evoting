@@ -196,16 +196,27 @@ contract EVotingSystem {
     }
 
     /**
-    * @dev Check if an address has voted
+    * @dev Check if an address is registered and has voted
     * @param _voter Address to check
+    * @return isRegistered Whether the address is registered
     * @return hasVoted Whether the address has voted
-    * @return votedFor The candidate ID they voted for (if they voted)
     */
     function checkVoterStatus(address _voter) public view returns (
-        bool hasVoted, 
-        uint256 votedFor
+        bool isRegistered,
+        bool hasVoted
     ) {
+        Voter memory voter = voters[_voter];
+        return (voter.isRegistered, voter.hasVoted);
+    }
+
+    /**
+    * @dev Get voter's voted candidate if they have voted
+    * @param _voter Address to check
+    * @return votedFor The candidate ID they voted for
+    */
+    function getVoterVote(address _voter) public view returns (uint256 votedFor) {
         require(voters[_voter].isRegistered, "Voter is not registered");
-        return (voters[_voter].hasVoted, voters[_voter].votedCandidateId);
+        require(voters[_voter].hasVoted, "Voter has not voted yet");
+        return voters[_voter].votedCandidateId;
     }
 }
