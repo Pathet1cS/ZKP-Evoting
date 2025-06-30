@@ -4,9 +4,8 @@ A decentralized voting system using Zero Knowledge Proofs (ZKPs) to ensure priva
 
 ## Overview
 
-This system provides two voting mechanisms:
-1. Traditional blockchain-based voting system
-2. Zero Knowledge Proof (ZKP) based anonymous voting system
+This system provides zkp voting mechanisms:
+Zero Knowledge Proof (ZKP) based anonymous voting system
 
 The ZKP implementation allows voters to cast votes without revealing their identity, while still ensuring each registered voter can only vote once.
 
