@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+package-lock.json
+/build
+.cursor/
+circuits/out
+circuits/input.json
+TASKS.md
+doc/

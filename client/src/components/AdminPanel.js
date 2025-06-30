@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+// Import full ethers package
 import { ethers, isAddress } from 'ethers';
 
 function AdminPanel({ contract, votingActive, setVotingActive }) {
@@ -80,8 +81,9 @@ function AdminPanel({ contract, votingActive, setVotingActive }) {
       }
     } catch (err) {
       console.error("Error adding candidate:", err);
+      const errorMessage = err.message || "Failed to add candidate";
       setMessage({ 
-        text: err.message.includes("Voting has already started") 
+        text: errorMessage.includes("Voting has already started") 
           ? "Cannot add candidates after voting has started" 
           : "Failed to add candidate. Make sure you are connected with the admin account.", 
         type: 'error' 
@@ -93,6 +95,7 @@ function AdminPanel({ contract, votingActive, setVotingActive }) {
 
   const registerVoter = async (e) => {
     e.preventDefault();
+    // Use ethers v6 address validation
     if (!isAddress(voterAddress)) {
       setMessage({ text: "Please enter a valid Ethereum address", type: 'error' });
       return;
@@ -117,8 +120,9 @@ function AdminPanel({ contract, votingActive, setVotingActive }) {
       }
     } catch (err) {
       console.error("Error registering voter:", err);
+      const errorMessage = err.message || "Failed to register voter";
       setMessage({ 
-        text: err.message.includes("Voter is already registered") 
+        text: errorMessage.includes("Voter is already registered") 
           ? "This address is already registered" 
           : "Failed to register voter", 
         type: 'error' 

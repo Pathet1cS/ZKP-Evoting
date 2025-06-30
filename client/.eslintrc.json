@@ -1,0 +1,17 @@
+{
+  "extends": [
+    "react-app",
+    "react-app/jest"
+  ],
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2020": true
+  },
+  "globals": {
+    "BigInt": true
+  },
+  "rules": {
+    "no-unused-vars": "warn"
+  }
+} 
